@@ -20,5 +20,5 @@ progress = glasses / 8 # Assuming 8 is the goal
 st.progress(min(progress, 1.0))
 
 if glasses >= 8:
-st.balloons()
-st.write("Target reached! You are well hydrated.")
+ st.balloons()
+ st.write("Target reached! You are well hydrated.")
