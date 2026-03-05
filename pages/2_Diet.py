@@ -1,7 +1,45 @@
 import streamlit as st
+import requests # You might need to run 'pip install requests' in your venv
+if 'total_calories' not in st.session_state:
+    st.session_state['total_calories'] = 0
+def get_nutrition_data(query):
+ api_url = 'https://api.api-ninjas.com/v1/nutrition?query='
+# Replace the text below with your actual API Key
+ headers = {'X-Api-Key':'iSNPL2eyrSff8nedAKuMzpS3fLNu6ejJd8zMHPIs'}
+ try:
+   response = requests.get(api_url + query, headers=headers)
+ #return response.json()
 
+   if response.status_code == 200:
+    return response.json() # This returns a list of food items
+   else:
+    print(f"Error: {response.status_code} - {response.text}")
+    return None
+ except Exception as e:
+    print(f"Exception occurred: {e}")
+    return None
 st.title("🥗 Personalized Nutrition & Hydration")
-
+# 2. THE SEARCH UI (Place it here!)
+st.subheader("🔍 Quick Log")
+food_input = st.text_input("What did you eat?", placeholder="e.g., 2 slices of pizza")
+if st.button("Log Food"):
+ if food_input:
+# This is where the 'Real-Time' magic happens
+  data = get_nutrition_data(food_input)
+  if data and isinstance(data, list) and len(data) > 0:
+     try:
+       new_cals=sum(float(item.get('calories', 0)) for item in data if isinstance(item,dict) and 'calories' in item)
+# logic to update session_state...
+       st.session_state['total_calories'] += int(new_cals)
+       st.success(f"Successfully logged {food_input} ({int(new_cals)}kcal)")
+       st.write(f"Added {int(new_cals)} calories to your daily total.") # Adds a nice visual line to separate the search from the summary
+       st.rerun()
+     except Exception as e:
+       st.error(f"Logic error:{e}")
+  elif data==[]:
+       st.warning(f"Sorry, we couldn't find that food item '{food_input}'. Try 'pizza' or '1 apple' for better results.")  
+  else:  
+    st.error("Please type a valid food item.")
 # 1. Physical Data Inputs
 col_phys1, col_phys2, col_phys3 = st.columns(3)
 with col_phys1:
@@ -48,7 +86,9 @@ if water_consumed >= water_target_liters:
 else:
  needed = water_target_liters - water_consumed
  st.warning(f"⚠️ You need {needed:.1f}L more to reach your daily goal of {water_target_liters:.1f}L.")
-
 # Final Calorie Check
 total_cals = (p_in*4) + (c_in*4) + (f_in*9)
-st.metric("Total Calories", f"{int(total_cals)} / {int(tdee)} kcal")
+st.session_state['total_calories']=int(total_cals)
+manual_cals = int(total_cals)
+grand_total=st.session_state['total_calories']+manual_cals
+st.metric("Total Calories", f"{int(grand_total)} / {int(tdee)} kcal")
